@@ -97,32 +97,28 @@ export default function PhysicsCanvas({ socket, activeTool, selectedBody, onSele
       if (tool === 'constraint-start' || tool === 'rigid-start') {
         const bodies = Composite.allBodies(engine.world).filter(b => !['ground', 'wall'].includes(b.label));
         const clicked = bodies.find(b => Matter.Bounds.contains(b.bounds, { x, y }) && Matter.Vertices.contains(b.vertices, { x, y }));
+        
         if (clicked && clicked._customId) {
-          constraintStartRef.current = clicked._customId;
-        }
-        return;
-      }
-
-      if (tool === 'constraint-end' && constraintStartRef.current) {
-        const bodies = Composite.allBodies(engine.world).filter(b => !['ground', 'wall'].includes(b.label));
-        const clicked = bodies.find(b => Matter.Bounds.contains(b.bounds, { x, y }) && Matter.Vertices.contains(b.vertices, { x, y }));
-        if (clicked && clicked._customId && clicked._customId !== constraintStartRef.current) {
-          const cData = { bodyAId: constraintStartRef.current, bodyBId: clicked._customId, stiffness: 0.05, type: 'spring' };
-          addConstraintFromData(engine, { ...cData, id: 'c-' + Math.random().toString(36).substr(2, 6) });
-          socket?.emit('add-constraint', cData);
-          constraintStartRef.current = null;
-        }
-        return;
-      }
-
-      if (tool === 'rigid-end' && constraintStartRef.current) {
-        const bodies = Composite.allBodies(engine.world).filter(b => !['ground', 'wall'].includes(b.label));
-        const clicked = bodies.find(b => Matter.Bounds.contains(b.bounds, { x, y }) && Matter.Vertices.contains(b.vertices, { x, y }));
-        if (clicked && clicked._customId && clicked._customId !== constraintStartRef.current) {
-          const cData = { bodyAId: constraintStartRef.current, bodyBId: clicked._customId, stiffness: 1, type: 'rigid' };
-          addConstraintFromData(engine, { ...cData, id: 'c-' + Math.random().toString(36).substr(2, 6) });
-          socket?.emit('add-constraint', cData);
-          constraintStartRef.current = null;
+          // If we haven't clicked a first body yet, save this one
+          if (!constraintStartRef.current) {
+            constraintStartRef.current = clicked._customId;
+          } 
+          // If we ALREADY clicked a first body, connect them!
+          else if (clicked._customId !== constraintStartRef.current) {
+            const isRigid = tool === 'rigid-start';
+            const cData = { 
+              bodyAId: constraintStartRef.current, 
+              bodyBId: clicked._customId, 
+              stiffness: isRigid ? 1 : 0.05, 
+              type: isRigid ? 'rigid' : 'spring' 
+            };
+            
+            addConstraintFromData(engine, { ...cData, id: 'c-' + Math.random().toString(36).substr(2, 6) });
+            socket?.emit('add-constraint', cData);
+            
+            // Reset the ref so you can start a brand new connection
+            constraintStartRef.current = null;
+          }
         }
         return;
       }
