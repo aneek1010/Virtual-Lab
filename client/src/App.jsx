@@ -107,9 +107,19 @@ export default function App() {
         </div>
 
         {/* Right Panel */}
+        {/* Right Panel */}
         <div className="w-80 glass flex flex-col overflow-hidden shrink-0">
-          <PropertiesPanel selectedBody={selectedBody} engineRef={engineRef} />
+          {/* 1. Graph moved to the TOP */}
           {showDashboard && <Dashboard data={physicsData} selectedBody={selectedBody} />}
+          
+          {/* 2. Properties moved to BOTTOM and made scrollable */}
+          <div className="flex-1 overflow-y-auto custom-scrollbar border-t border-white/10">
+            <PropertiesPanel 
+              selectedBody={selectedBody} 
+              engineRef={engineRef} 
+              socket={socket} 
+            />
+          </div>
         </div>
       </div>
 
