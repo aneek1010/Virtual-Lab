@@ -170,6 +170,13 @@ export default function PhysicsCanvas({ socket, activeTool, selectedBody, onSele
       const allBodies = Composite.allBodies(engine.world).filter(b => !b.isStatic && !['ground', 'wall'].includes(b.label));
       onBodyCountChange?.(allBodies.length);
 
+      const activeIds = allBodies.map(b => b._customId);
+      for (let i = trackedBodiesRef.length - 1; i >= 0; i--) {
+        if (!activeIds.includes(trackedBodiesRef[i])) {
+          trackedBodiesRef.splice(i, 1);
+        }
+      }
+
       // Track up to 5 bodies by their stable ID
       allBodies.forEach(b => {
         if (!trackedBodiesRef.includes(b._customId) && trackedBodiesRef.length < 5) {
