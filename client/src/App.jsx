@@ -1,5 +1,4 @@
-import React, { useState, useCallback } from 'react';
-import RoomJoin from './components/RoomJoin';
+import React, { useState, useCallback, useEffect } from 'react';import RoomJoin from './components/RoomJoin';
 import Toolbar from './components/Toolbar';
 import PhysicsCanvas from './components/PhysicsCanvas';
 import PropertiesPanel from './components/PropertiesPanel';
@@ -24,6 +23,36 @@ export default function App() {
   const [engineRef, setEngineRef] = useState(null);
   const [bodyCount, setBodyCount] = useState(0);
 
+  const [dashboardHeight, setDashboardHeight] = useState(300); // Default height in pixels
+  const [isDragging, setIsDragging] = useState(false);
+
+  const handleMouseDown = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (!isDragging) return;
+      
+      setDashboardHeight((prev) => {
+        const newHeight = prev + e.movementY;
+        return Math.max(100, Math.min(newHeight, window.innerHeight - 200));
+      });
+    };
+
+    const handleMouseUp = () => setIsDragging(false);
+
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging]);
+  // -------------------------
   const joinRoom = useCallback((name, room) => {
     const s = io(SOCKET_URL);
     s.on('connect', () => {
@@ -107,13 +136,25 @@ export default function App() {
         </div>
 
         {/* Right Panel */}
-        {/* Right Panel */}
         <div className="w-80 glass flex flex-col overflow-hidden shrink-0">
-          {/* 1. Graph moved to the TOP */}
-          {showDashboard && <Dashboard data={physicsData} selectedBody={selectedBody} />}
           
-          {/* 2. Properties moved to BOTTOM and made scrollable */}
-          <div className="flex-1 overflow-y-auto custom-scrollbar border-t border-white/10">
+          {showDashboard && (
+            <div style={{ height: `${dashboardHeight}px` }} className="flex flex-col shrink-0 overflow-hidden">
+              <Dashboard data={physicsData} selectedBody={selectedBody} />
+            </div>
+          )}
+
+          {showDashboard && (
+            <div 
+              onMouseDown={handleMouseDown}
+              className={`h-1.5 w-full cursor-ns-resize shrink-0 transition-colors ${
+                isDragging ? 'bg-indigo-500' : 'bg-white/10 hover:bg-indigo-400/50'
+              }`}
+              title="Drag to resize"
+            />
+          )}
+
+          <div className="flex-1 overflow-y-auto custom-scrollbar">
             <PropertiesPanel 
               selectedBody={selectedBody} 
               engineRef={engineRef} 
